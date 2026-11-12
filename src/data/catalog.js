@@ -133,7 +133,7 @@ export const products = [
     description: 'A soft woven strap adds a comfortable carry option for a compatible camera.',
     specifications: { material: 'Cotton canvas', length: 'Adjustable', attachment: 'Universal loops' },
     label: '',
-    image: 'photo-1519183071298-a2962be90b8e',
+    image: 'photo-1538061717914-bcf1cad428ed',
   },
   {
     id: 'bag-01',
