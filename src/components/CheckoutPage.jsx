@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { useRef, useState } from 'react'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/currency'
 import { useCart } from './cart-context'
 import Footer from './Footer'
@@ -96,7 +96,9 @@ function CheckoutField({ field, value, error, showError, onChange, onBlur }) {
 }
 
 function CheckoutContents() {
-  const { cartItems, itemCount, subtotal } = useCart()
+  const { cartItems, itemCount, subtotal, removeFromBag } = useCart()
+  const navigate = useNavigate()
+  const submissionLock = useRef(false)
   const [values, setValues] = useState(initialValues)
   const [touched, setTouched] = useState({})
   const [attemptedContinue, setAttemptedContinue] = useState(false)
@@ -105,9 +107,12 @@ function CheckoutContents() {
   const [promoCode, setPromoCode] = useState('')
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoError, setPromoError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submissionError, setSubmissionError] = useState('')
+  const [orderSaved, setOrderSaved] = useState(false)
   const errors = Object.fromEntries(allFields.map((field) => [field.name, validateField(field.name, values[field.name])]))
 
-  if (cartItems.length === 0) return <Navigate to="/shop" replace />
+  if (cartItems.length === 0 && !orderSaved) return <Navigate to="/shop" replace />
 
   const safeSubtotal = Number.isFinite(subtotal) ? Math.max(0, subtotal) : 0
   const standardDeliveryCost = safeSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_DELIVERY_RATE
@@ -117,6 +122,12 @@ function CheckoutContents() {
   const shippingCostCents = Math.round(Math.max(0, shippingCost) * 100)
   const orderTotal = Math.max(0, safeSubtotalCents - discountCents + shippingCostCents) / 100
   const shippingMethodName = shippingMethod === 'express' ? 'Express delivery' : 'Standard delivery'
+
+  function releaseSubmissionLock(message) {
+    submissionLock.current = false
+    setIsSubmitting(false)
+    setSubmissionError(message)
+  }
 
   function updateField(name, value) {
     setValues((currentValues) => ({ ...currentValues, [name]: value }))
@@ -168,6 +179,152 @@ function CheckoutContents() {
     setPromoError('')
   }
 
+  function placeDemoOrder() {
+    if (submissionLock.current) return
+
+    submissionLock.current = true
+    setIsSubmitting(true)
+    setSubmissionError('')
+
+    const validationErrors = allFields.some((field) => validateField(field.name, values[field.name]))
+    const isDeliveryMethodValid = shippingMethod === 'standard' || shippingMethod === 'express'
+    const isCartValid = cartItems.length > 0
+      && cartItems.every(({ product, quantity }) => product
+        && typeof product.id === 'string'
+        && typeof product.name === 'string'
+        && typeof product.sku === 'string'
+        && Number.isFinite(product.price)
+        && product.price >= 0
+      && Number.isSafeInteger(Math.round(product.price * 100))
+      && Number.isInteger(product.stock)
+        && Number.isInteger(quantity)
+        && quantity > 0
+        && quantity <= product.stock)
+      && Number.isInteger(itemCount)
+      && itemCount === cartItems.reduce((count, item) => count + item.quantity, 0)
+
+    if (validationErrors || !isDeliveryMethodValid || !isCartValid || !Number.isSafeInteger(safeSubtotalCents)) {
+      setAttemptedContinue(true)
+      setDetailsReady(false)
+      releaseSubmissionLock('Please review the checkout details, delivery method, and cart before placing your demo order.')
+      return
+    }
+
+    if (promoApplied && promoCode.trim().toUpperCase() !== PROMOTION_CODE) {
+      setPromoApplied(false)
+      setSubmissionError('The promotion code state is no longer valid. Review the code and try again.')
+      submissionLock.current = false
+      setIsSubmitting(false)
+      return
+    }
+
+    const snapshotItems = []
+    for (const { product, quantity } of cartItems) {
+      const unitPriceCents = Math.round(product.price * 100)
+      const lineSubtotalCents = unitPriceCents * quantity
+      if (!Number.isSafeInteger(lineSubtotalCents)) {
+        releaseSubmissionLock('A product line total could not be verified. Please review your bag and try again.')
+        return
+      }
+
+      snapshotItems.push(Object.freeze({
+        productId: product.id,
+        name: product.name,
+        sku: product.sku,
+        unitPriceCents,
+        quantity,
+        lineSubtotalCents,
+      }))
+    }
+    const merchandiseSubtotalCents = snapshotItems.reduce((total, item) => total + item.lineSubtotalCents, 0)
+    const expectedSubtotalCents = Math.round(safeSubtotal * 100)
+    if (!Number.isSafeInteger(merchandiseSubtotalCents) || merchandiseSubtotalCents !== expectedSubtotalCents) {
+      releaseSubmissionLock('The cart total could not be verified. Please review your bag and try again.')
+      return
+    }
+
+    const deliveryCostCents = shippingMethod === 'express'
+      ? EXPRESS_DELIVERY_RATE * 100
+      : (merchandiseSubtotalCents >= FREE_SHIPPING_THRESHOLD * 100 ? 0 : STANDARD_DELIVERY_RATE * 100)
+    const appliedDiscountCents = promoApplied
+      ? Math.round(merchandiseSubtotalCents * PROMOTION_DISCOUNT_PERCENT / 100)
+      : 0
+    const totalCents = Math.max(0, merchandiseSubtotalCents - appliedDiscountCents + deliveryCostCents)
+
+    if (![deliveryCostCents, appliedDiscountCents, totalCents].every(Number.isSafeInteger)) {
+      releaseSubmissionLock('The order total could not be verified. Please try again.')
+      return
+    }
+
+    if (typeof globalThis.crypto?.randomUUID !== 'function') {
+      releaseSubmissionLock('This browser cannot generate a secure demo order reference. Please use a supported browser and retry.')
+      return
+    }
+
+    const createdAtDate = new Date()
+    const createdAt = createdAtDate.toISOString()
+    const datePart = createdAt.slice(0, 10).replaceAll('-', '')
+    let uuid
+    try {
+      uuid = globalThis.crypto.randomUUID().toUpperCase()
+    } catch {
+      releaseSubmissionLock('This browser could not generate a secure demo order reference. Please retry in a supported browser.')
+      return
+    }
+    const reference = `SS-${datePart}-${uuid}`
+    const storageKey = `shopsphere:demo-order:${reference}`
+    const complimentary = shippingMethod === 'standard'
+      && merchandiseSubtotalCents >= FREE_SHIPPING_THRESHOLD * 100
+    const orderSnapshot = Object.freeze({
+      schemaVersion: 1,
+      reference,
+      createdAt,
+      currency: 'ZAR',
+      customer: Object.freeze({
+        fullName: values.fullName.trim(),
+        email: values.email.trim(),
+        phone: values.phone.trim(),
+      }),
+      deliveryAddress: Object.freeze({
+        streetAddress: values.streetAddress.trim(),
+        suburb: values.suburb.trim(),
+        city: values.city.trim(),
+        province: values.province.trim(),
+        postalCode: values.postalCode.trim(),
+      }),
+      delivery: Object.freeze({
+        method: shippingMethod,
+        name: shippingMethodName,
+        costCents: deliveryCostCents,
+        complimentary,
+      }),
+      items: Object.freeze(snapshotItems),
+      promotion: promoApplied
+        ? Object.freeze({ code: PROMOTION_CODE, discountCents: appliedDiscountCents })
+        : null,
+      totals: Object.freeze({
+        merchandiseSubtotalCents,
+        shippingCents: deliveryCostCents,
+        orderTotalCents: totalCents,
+      }),
+    })
+
+    try {
+      if (window.sessionStorage.getItem(storageKey) !== null) {
+        releaseSubmissionLock('A demo order already uses this reference. Please retry to create a new reference.')
+        return
+      }
+      window.sessionStorage.setItem(storageKey, JSON.stringify(orderSnapshot))
+    } catch {
+      releaseSubmissionLock('The demo order could not be saved in this browser session. Your bag is unchanged; please allow session storage and retry.')
+      return
+    }
+
+    setOrderSaved(true)
+    navigate(`/order-confirmation/${encodeURIComponent(reference)}`)
+    cartItems.forEach(({ product }) => removeFromBag(product.id))
+  }
+
   return <div className="page-shell checkout-page">
     <Header />
     <main className="checkout-main section-wrap">
@@ -216,8 +373,10 @@ function CheckoutContents() {
           </section>
 
           <div className="checkout-continue-area">
-            <button className="button button-dark checkout-continue" type="submit">Continue to delivery <Icon name="arrow" size={17} /></button>
+            <button className="button button-dark checkout-continue" type="submit">Review checkout details <Icon name="arrow" size={17} /></button>
             <p className="checkout-valid-message" aria-live="polite">{detailsReady ? 'Your customer details and delivery selection are valid and ready for the next checkout step.' : ''}</p>
+            {detailsReady && <button className="button button-dark checkout-place-order" type="button" onClick={placeDemoOrder} disabled={isSubmitting}>{isSubmitting ? 'Saving demo order…' : 'Place demo order'}</button>}
+            {submissionError && <p className="checkout-submission-error" role="alert">{submissionError}</p>}
           </div>
         </form>
 
@@ -256,7 +415,7 @@ function CheckoutContents() {
           <div className="checkout-summary-row"><span>{shippingMethodName}</span><strong>{shippingCost === 0 ? 'FREE' : formatCurrency(shippingCost)}</strong></div>
           {promoApplied && <div className="checkout-summary-row checkout-discount-row"><span>HELLO15 discount</span><strong>−{formatCurrency(discountCents / 100)}</strong></div>}
           <div className="checkout-summary-row checkout-summary-total"><span>Order total</span><strong>{formatCurrency(orderTotal)}</strong></div>
-          <p className="checkout-demo-note">This is a checkout layout preview only. No information is submitted and no order is placed.</p>
+          <p className="checkout-demo-note">This is a frontend demo. A demo order snapshot is saved in this browser session, but no real order or payment is processed.</p>
         </aside>
       </div>
     </main>
