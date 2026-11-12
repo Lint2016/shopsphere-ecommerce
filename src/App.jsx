@@ -3,6 +3,8 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import ProductCard from './components/ProductCard'
 import ShopPage from './components/ShopPage'
+import ProductPage from './components/ProductPage'
+import CartProvider from './components/CartProvider'
 import { Icon } from './components/Icons'
 import { categories, imageUrl, products } from './data/catalog'
 import './App.css'
@@ -41,10 +43,13 @@ function ShopLayout() {
 
 function App() {
   return <BrowserRouter>
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/shop" element={<ShopLayout />} />
-    </Routes>
+    <CartProvider>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/shop" element={<ShopLayout />} />
+        <Route path="/products/:slug" element={<ProductPage />} />
+      </Routes>
+    </CartProvider>
   </BrowserRouter>
 }
 

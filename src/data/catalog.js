@@ -29,6 +29,7 @@ export const products = [
   // Fictional demonstration catalogue; prices and stock are illustrative, not supplier quotations or live inventory.
   {
     id: 'watch-01',
+    slug: 'classic-chronograph',
     sku: 'SS-WAT-001',
     name: 'Classic Chronograph',
     category: 'Watches',
@@ -41,6 +42,7 @@ export const products = [
   },
   {
     id: 'audio-01',
+    slug: 'studio-wireless-headphones',
     sku: 'SS-ELE-001',
     name: 'Studio Wireless Headphones',
     category: 'Electronics',
@@ -53,6 +55,7 @@ export const products = [
   },
   {
     id: 'camera-01',
+    slug: 'everyday-film-camera',
     sku: 'SS-ACC-001',
     name: 'Everyday Film Camera',
     category: 'Accessories',
@@ -65,6 +68,7 @@ export const products = [
   },
   {
     id: 'home-01',
+    slug: 'ceramic-pour-over-set',
     sku: 'SS-LIF-001',
     name: 'Ceramic Pour Over Set',
     category: 'Lifestyle',
@@ -77,6 +81,7 @@ export const products = [
   },
   {
     id: 'watch-02',
+    slug: 'minimalist-mesh-watch',
     sku: 'SS-WAT-002',
     name: 'Minimalist Mesh Watch',
     category: 'Watches',
@@ -89,6 +94,7 @@ export const products = [
   },
   {
     id: 'watch-03',
+    slug: 'trail-timepiece',
     sku: 'SS-WAT-003',
     name: 'Trail Timepiece',
     category: 'Watches',
@@ -101,6 +107,7 @@ export const products = [
   },
   {
     id: 'audio-02',
+    slug: 'pocket-bluetooth-speaker',
     sku: 'SS-ELE-002',
     name: 'Pocket Bluetooth Speaker',
     category: 'Electronics',
@@ -113,6 +120,7 @@ export const products = [
   },
   {
     id: 'tech-01',
+    slug: 'desk-charging-stand',
     sku: 'SS-ELE-003',
     name: 'Desk Charging Stand',
     category: 'Electronics',
@@ -125,6 +133,7 @@ export const products = [
   },
   {
     id: 'camera-02',
+    slug: 'canvas-camera-strap',
     sku: 'SS-ACC-002',
     name: 'Canvas Camera Strap',
     category: 'Accessories',
@@ -137,6 +146,7 @@ export const products = [
   },
   {
     id: 'bag-01',
+    slug: 'everyday-crossbody-pouch',
     sku: 'SS-ACC-003',
     name: 'Everyday Crossbody Pouch',
     category: 'Accessories',
@@ -149,6 +159,7 @@ export const products = [
   },
   {
     id: 'home-02',
+    slug: 'linen-cushion-cover',
     sku: 'SS-LIF-002',
     name: 'Linen Cushion Cover',
     category: 'Lifestyle',
@@ -161,6 +172,7 @@ export const products = [
   },
   {
     id: 'home-03',
+    slug: 'insulated-travel-tumbler',
     sku: 'SS-LIF-003',
     name: 'Insulated Travel Tumbler',
     category: 'Lifestyle',
