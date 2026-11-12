@@ -25,7 +25,7 @@ export default function Header() {
       </nav>
       <div className="header-actions">
         <button className="icon-button search-toggle" type="button" aria-label="Search products" aria-expanded={searchOpen} onClick={() => setSearchOpen(!searchOpen)}><Icon name="search" /></button>
-        <button className="cart-link" type="button" aria-label={`Shopping bag, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`}><Icon name="bag" /><span className="cart-count" aria-hidden="true">{itemCount}</span></button>
+        <Link className="cart-link" to="/cart" aria-label={`Shopping bag, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`}><Icon name="bag" /><span className="cart-count" aria-hidden="true">{itemCount}</span></Link>
       </div>
       {searchOpen && <form className="search-panel" role="search" onSubmit={(event) => event.preventDefault()}><label className="sr-only" htmlFor="site-search">Search products</label><input id="site-search" autoFocus placeholder="What are you looking for?" /><button type="submit" aria-label="Submit search"><Icon name="search" /></button></form>}
     </header>
