@@ -5,6 +5,7 @@ import ProductCard from './components/ProductCard'
 import ShopPage from './components/ShopPage'
 import ProductPage from './components/ProductPage'
 import CartPage from './components/CartPage'
+import CheckoutPage from './components/CheckoutPage'
 import CartProvider from './components/CartProvider'
 import { Icon } from './components/Icons'
 import { categories, imageUrl, products } from './data/catalog'
@@ -50,6 +51,7 @@ function App() {
         <Route path="/shop" element={<ShopLayout />} />
         <Route path="/products/:slug" element={<ProductPage />} />
         <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
       </Routes>
     </CartProvider>
   </BrowserRouter>

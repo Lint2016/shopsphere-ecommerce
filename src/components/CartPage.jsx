@@ -80,6 +80,7 @@ function CartContents() {
         <h2 id="order-summary-title">Order summary</h2>
         <div className="summary-row"><span>Items</span><span>{itemCount}</span></div>
         <div className="summary-row summary-subtotal"><span>Subtotal</span><strong>{formatCurrency(subtotal)}</strong></div>
+        <Link className="button button-dark cart-checkout-link" to="/checkout">Proceed to checkout <Icon name="arrow" size={16} /></Link>
         <div className="shipping-progress-copy" aria-live="polite">
           {qualifiesForComplimentaryShipping
             ? 'Complimentary shipping threshold reached in this demo.'
