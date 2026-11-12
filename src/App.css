@@ -223,3 +223,20 @@
 @media(max-width:650px){
   .shipping-option{grid-template-columns:16px minmax(0,1fr) auto;gap:8px;padding:12px}
 }
+
+.promo-code-form{margin:18px 0 0;padding-top:16px;border-top:1px solid #d8e0e6}
+.promo-code-form>label{display:block;margin-bottom:7px;color:#526071;font-size:9px;font-weight:500}
+.promo-code-controls{display:flex;gap:7px}
+.promo-code-controls input{width:100%;min-width:0;height:37px;border:1px solid #d7e0e7;background:#F8FAFC;padding:0 9px;color:#263445;font-size:10px;text-transform:uppercase}
+.promo-code-controls input:focus{outline:2px solid #38BDF8;outline-offset:1px}
+.promo-code-controls input[aria-invalid="true"]{border-color:#b42318}
+.promo-apply-button{flex:0 0 auto;min-width:62px;border:1px solid #101B2B;background:#101B2B;padding:0 12px;color:#fff;font-size:9px;font-weight:600;cursor:pointer}
+.promo-apply-button:hover:not(:disabled){background:#263445}
+.promo-apply-button:disabled{opacity:.55;cursor:not-allowed}
+.promo-feedback-error,.promo-feedback-success{margin:8px 0 0;font-size:8px;line-height:1.55}
+.promo-feedback-error{color:#b42318}
+.promo-feedback-success{color:#167044}
+.promo-remove-button{margin-top:7px;border:0;border-bottom:1px solid #aeb9c3;background:none;padding:0 0 2px;color:#526071;font-size:8px;cursor:pointer}
+.promo-remove-button:hover{color:#101B2B;border-color:#101B2B}
+.checkout-discount-row{color:#167044}
+.checkout-discount-row strong{font-weight:600}

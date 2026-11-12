@@ -35,6 +35,8 @@ const allFields = [...contactFields, ...addressFields]
 const FREE_SHIPPING_THRESHOLD = 1000
 const STANDARD_DELIVERY_RATE = 75
 const EXPRESS_DELIVERY_RATE = 150
+const PROMOTION_CODE = 'HELLO15'
+const PROMOTION_DISCOUNT_PERCENT = 15
 
 function validateField(name, rawValue) {
   const value = rawValue.trim()
@@ -100,6 +102,9 @@ function CheckoutContents() {
   const [attemptedContinue, setAttemptedContinue] = useState(false)
   const [detailsReady, setDetailsReady] = useState(false)
   const [shippingMethod, setShippingMethod] = useState('standard')
+  const [promoCode, setPromoCode] = useState('')
+  const [promoApplied, setPromoApplied] = useState(false)
+  const [promoError, setPromoError] = useState('')
   const errors = Object.fromEntries(allFields.map((field) => [field.name, validateField(field.name, values[field.name])]))
 
   if (cartItems.length === 0) return <Navigate to="/shop" replace />
@@ -107,7 +112,10 @@ function CheckoutContents() {
   const safeSubtotal = Number.isFinite(subtotal) ? Math.max(0, subtotal) : 0
   const standardDeliveryCost = safeSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_DELIVERY_RATE
   const shippingCost = shippingMethod === 'express' ? EXPRESS_DELIVERY_RATE : standardDeliveryCost
-  const orderTotal = Math.max(0, safeSubtotal + shippingCost)
+  const safeSubtotalCents = Math.round(safeSubtotal * 100)
+  const discountCents = promoApplied ? Math.round(safeSubtotalCents * PROMOTION_DISCOUNT_PERCENT / 100) : 0
+  const shippingCostCents = Math.round(Math.max(0, shippingCost) * 100)
+  const orderTotal = Math.max(0, safeSubtotalCents - discountCents + shippingCostCents) / 100
   const shippingMethodName = shippingMethod === 'express' ? 'Express delivery' : 'Standard delivery'
 
   function updateField(name, value) {
@@ -131,6 +139,33 @@ function CheckoutContents() {
   function selectShippingMethod(method) {
     setShippingMethod(method)
     setDetailsReady(false)
+  }
+
+  function applyPromotion(event) {
+    event.preventDefault()
+    if (promoApplied) return
+
+    if (promoCode.trim().toUpperCase() === PROMOTION_CODE) {
+      setPromoApplied(true)
+      setPromoError('')
+      setPromoCode(PROMOTION_CODE)
+      return
+    }
+
+    setPromoApplied(false)
+    setPromoError('That promotion code is not valid. Check the code and try again.')
+  }
+
+  function updatePromoCode(value) {
+    setPromoCode(value)
+    setPromoError('')
+    if (promoApplied) setPromoApplied(false)
+  }
+
+  function removePromotion() {
+    setPromoApplied(false)
+    setPromoCode('')
+    setPromoError('')
   }
 
   return <div className="page-shell checkout-page">
@@ -195,9 +230,31 @@ function CheckoutContents() {
               <strong>{formatCurrency(product.price * quantity)}</strong>
             </li>)}
           </ul>
+          <form className="promo-code-form" onSubmit={applyPromotion}>
+            <label htmlFor="checkout-promo-code">Promotion code</label>
+            <div className="promo-code-controls">
+              <input
+                id="checkout-promo-code"
+                name="promotionCode"
+                type="text"
+                autoComplete="off"
+                value={promoCode}
+                aria-invalid={Boolean(promoError)}
+                aria-describedby={promoError ? 'checkout-promo-error' : undefined}
+                onChange={(event) => updatePromoCode(event.target.value)}
+              />
+              <button className="promo-apply-button" type="submit" disabled={promoApplied}>Apply</button>
+            </div>
+          </form>
+          {promoError && <p className="promo-feedback-error" id="checkout-promo-error" role="alert">{promoError}</p>}
+          {promoApplied && <>
+            <p className="promo-feedback-success" role="status">HELLO15 applied: 15% off merchandise. First-order eligibility is not verified in this demo.</p>
+            <button className="promo-remove-button" type="button" onClick={removePromotion}>Remove promotion</button>
+          </>}
           <div className="checkout-summary-row"><span>Items</span><span>{itemCount}</span></div>
           <div className="checkout-summary-row"><span>Items subtotal</span><strong>{formatCurrency(safeSubtotal)}</strong></div>
           <div className="checkout-summary-row"><span>{shippingMethodName}</span><strong>{shippingCost === 0 ? 'FREE' : formatCurrency(shippingCost)}</strong></div>
+          {promoApplied && <div className="checkout-summary-row checkout-discount-row"><span>HELLO15 discount</span><strong>−{formatCurrency(discountCents / 100)}</strong></div>}
           <div className="checkout-summary-row checkout-summary-total"><span>Order total</span><strong>{formatCurrency(orderTotal)}</strong></div>
           <p className="checkout-demo-note">This is a checkout layout preview only. No information is submitted and no order is placed.</p>
         </aside>
