@@ -3,10 +3,21 @@ import ProductCard from './ProductCard'
 import { categories, products } from '../data/catalog'
 
 const filters = ['All', ...categories.map(({ name }) => name)]
+const sortOptions = [
+  { value: 'featured', label: 'Featured' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' },
+  { value: 'name-asc', label: 'Name: A to Z' },
+  { value: 'name-desc', label: 'Name: Z to A' },
+]
+const urlSortValues = sortOptions.filter(({ value }) => value !== 'featured').map(({ value }) => value)
+const productOrder = new Map(products.map((product, index) => [product.id, index]))
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedCategory = searchParams.get('category') || 'All'
+  const requestedSort = searchParams.get('sort')
+  const selectedSort = urlSortValues.includes(requestedSort) ? requestedSort : 'featured'
   const searchQuery = (searchParams.get('q') || '').trim()
   const query = searchQuery.toLowerCase()
   const hasCategoryFilter = selectedCategory !== 'All'
@@ -17,6 +28,21 @@ export default function ShopPage() {
       .some((field) => field.toLowerCase().includes(query))
 
     return matchesCategory && matchesQuery
+  })
+  const sortedProducts = [...matchingProducts].sort((first, second) => {
+    let comparison = 0
+
+    if (selectedSort === 'price-asc') {
+      comparison = first.price - second.price
+    } else if (selectedSort === 'price-desc') {
+      comparison = second.price - first.price
+    } else if (selectedSort === 'name-asc') {
+      comparison = first.name.localeCompare(second.name, undefined, { sensitivity: 'base' })
+    } else if (selectedSort === 'name-desc') {
+      comparison = second.name.localeCompare(first.name, undefined, { sensitivity: 'base' })
+    }
+
+    return comparison || productOrder.get(first.id) - productOrder.get(second.id)
   })
 
   function selectCategory(category) {
@@ -49,6 +75,17 @@ export default function ShopPage() {
     setSearchParams(nextParams)
   }
 
+  function selectSort(sort) {
+    const nextParams = new URLSearchParams(searchParams)
+    if (sort === 'featured') {
+      nextParams.delete('sort')
+    } else {
+      nextParams.set('sort', sort)
+    }
+
+    setSearchParams(nextParams)
+  }
+
   const emptyStateMessage = hasSearchFilter && hasCategoryFilter
     ? `No products in ${selectedCategory} match "${searchQuery}".`
     : hasSearchFilter
@@ -74,6 +111,12 @@ export default function ShopPage() {
           onClick={() => selectCategory(category)}
         >{category}</button>)}
       </div>
+      <div className="shop-sort-control">
+        <label htmlFor="shop-sort">Sort by</label>
+        <select id="shop-sort" value={selectedSort} onChange={(event) => selectSort(event.target.value)}>
+          {sortOptions.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+        </select>
+      </div>
       <div className="shop-result-info" aria-live="polite" aria-atomic="true">
         <span>{matchingProducts.length} {matchingProducts.length === 1 ? 'product' : 'products'}</span>
         {matchingProducts.length === 0 && <span className="sr-only">{emptyStateMessage}</span>}
@@ -83,7 +126,7 @@ export default function ShopPage() {
     </div>
 
     {matchingProducts.length > 0
-      ? <div className="product-grid">{matchingProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div>
+      ? <div className="product-grid">{sortedProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div>
       : <div className="shop-empty-state"><h2>{emptyStateMessage}</h2><p>Try adjusting your search or filters to browse the full collection.</p><div className="shop-empty-actions">
         {hasSearchFilter && <button className="clear-filters" type="button" onClick={clearSearch}>Clear search</button>}
         {hasCategoryFilter && <button className="clear-filters" type="button" onClick={clearCategory}>Clear category</button>}

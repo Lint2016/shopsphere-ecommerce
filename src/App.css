@@ -18,6 +18,8 @@
 .shop-intro{margin:14px 0 0;color:#687789;font-size:12px;line-height:1.8}
 .shop-toolbar{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:27px;padding-bottom:17px;border-bottom:1px solid #e2e8f0}
 .category-filters{display:flex;flex-wrap:wrap;gap:8px}
+.shop-sort-control{display:flex;align-items:center;gap:8px;white-space:nowrap;color:#526071;font-size:10px}
+.shop-sort-control select{min-width:180px;max-width:100%;padding:8px 28px 8px 10px;border:1px solid #d7e0e7;background:#fff;color:#263445;font-size:10px}
 .filter-button{border:1px solid #d7e0e7;background:transparent;padding:9px 14px;color:#526071;font-size:10px;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
 .filter-button:hover{border-color:#38BDF8;color:#101B2B}
 .filter-button.is-active{border-color:#101B2B;background:#101B2B;color:#fff}
@@ -36,6 +38,8 @@
   .shop-heading h1{font-size:38px}
   .shop-toolbar{align-items:flex-start;flex-direction:column;gap:15px;margin-bottom:20px}
   .category-filters{gap:7px}
+  .shop-sort-control{width:100%}
+  .shop-sort-control select{flex:1;min-width:0}
   .filter-button{min-height:44px;padding:8px 12px;font-size:9px}
   .shop-result-info{width:100%;justify-content:flex-start;flex-wrap:wrap;white-space:normal;gap:8px 14px}
   .clear-filters{display:inline-flex;align-items:center;min-height:44px;padding:6px}
