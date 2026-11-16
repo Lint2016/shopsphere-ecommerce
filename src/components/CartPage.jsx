@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatCurrency } from '../utils/currency'
 import { imageUrl } from '../data/catalog'
@@ -19,6 +20,25 @@ function EmptyCart() {
 
 function CartLine({ item, updateQuantity, removeFromBag }) {
   const { product, quantity } = item
+  const [quantityDraft, setQuantityDraft] = useState(String(quantity))
+  const quantityNumber = Number(quantityDraft)
+  let quantityError = ''
+
+  if (quantityDraft.trim() === '') {
+    quantityError = 'Enter a quantity of at least 1.'
+  } else if (!Number.isFinite(quantityNumber) || !/^\d+$/.test(quantityDraft) || !Number.isSafeInteger(quantityNumber)) {
+    quantityError = 'Enter a whole-number quantity.'
+  } else if (quantityNumber < 1) {
+    quantityError = 'Quantity must be at least 1.'
+  } else if (quantityNumber > product.stock) {
+    quantityError = `Only ${product.stock} ${product.stock === 1 ? 'item is' : 'items are'} available.`
+  }
+
+  function changeQuantity(nextQuantity) {
+    const boundedQuantity = Math.max(1, Math.min(product.stock, nextQuantity))
+    setQuantityDraft(String(boundedQuantity))
+    updateQuantity(product.id, boundedQuantity)
+  }
 
   return <li className="cart-line">
     <div className="cart-product-info">
@@ -39,13 +59,22 @@ function CartLine({ item, updateQuantity, removeFromBag }) {
     <div className="cart-line-quantity">
       <label className="cart-mobile-label" htmlFor={`quantity-${product.id}`}>Quantity</label>
       <div className="quantity-control">
-        <button type="button" aria-label={`Decrease ${product.name} quantity`} disabled={quantity <= 1} onClick={() => updateQuantity(product.id, quantity - 1)}>−</button>
-        <input id={`quantity-${product.id}`} type="number" min="1" max={product.stock} value={quantity} aria-label={`${product.name} quantity`} onChange={(event) => {
-          if (event.target.value === '') return
-          updateQuantity(product.id, Number(event.target.value))
-        }} />
-        <button type="button" aria-label={`Increase ${product.name} quantity`} disabled={quantity >= product.stock} onClick={() => updateQuantity(product.id, quantity + 1)}>+</button>
+        <button type="button" aria-label={`Decrease ${product.name} quantity`} disabled={quantity <= 1} onClick={() => changeQuantity(quantity - 1)}>−</button>
+        <input id={`quantity-${product.id}`} type="number" min="1" max={product.stock} step="1" value={quantityDraft} aria-label={`${product.name} quantity`} aria-invalid={Boolean(quantityError)} aria-describedby={quantityError ? `quantity-${product.id}-error` : undefined} onChange={(event) => {
+          const nextDraft = event.target.value
+          setQuantityDraft(nextDraft)
+          const nextQuantity = Number(nextDraft)
+          const isValidQuantity = nextDraft.trim() !== ''
+            && /^\d+$/.test(nextDraft)
+            && Number.isSafeInteger(nextQuantity)
+            && nextQuantity >= 1
+            && nextQuantity <= product.stock
+
+          if (isValidQuantity) updateQuantity(product.id, nextQuantity)
+        }} onBlur={() => setQuantityDraft(String(quantity))} />
+        <button type="button" aria-label={`Increase ${product.name} quantity`} disabled={quantity >= product.stock} onClick={() => changeQuantity(quantity + 1)}>+</button>
       </div>
+      {quantityError && <span className="cart-quantity-error" id={`quantity-${product.id}-error`} role="alert">{quantityError}</span>}
     </div>
     <div className="cart-line-subtotal">
       <span className="cart-mobile-label">Item subtotal</span>

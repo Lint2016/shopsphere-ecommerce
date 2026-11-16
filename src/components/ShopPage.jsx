@@ -73,8 +73,9 @@ export default function ShopPage() {
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory
     const matchesQuery = !query || [product.name, product.sku, product.category, product.description]
       .some((field) => field.toLowerCase().includes(query))
-    const matchesPrice = hasInvalidPriceRange
-      || ((minPrice === null || product.price >= minPrice) && (maxPrice === null || product.price <= maxPrice))
+    const matchesPrice = !hasInvalidPriceRange
+      && (minPrice === null || product.price >= minPrice)
+      && (maxPrice === null || product.price <= maxPrice)
     const matchesStock = !requestedInStock || product.stock > 0
 
     return matchesCategory && matchesQuery && matchesPrice && matchesStock
