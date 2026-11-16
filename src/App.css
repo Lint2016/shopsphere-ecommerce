@@ -33,6 +33,16 @@
 .filter-button:hover{border-color:#38BDF8;color:#101B2B}
 .filter-button.is-active{border-color:#101B2B;background:#101B2B;color:#fff}
 .shop-result-info{display:flex;align-items:center;gap:15px;white-space:nowrap;color:#687789;font-size:10px}
+.shop-pagination-bar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:27px}
+.shop-page-size-control{display:flex;align-items:center;gap:9px;color:#526071;font-size:10px}
+.shop-page-size-control select{min-width:68px;min-height:36px;padding:7px 24px 7px 9px;border:1px solid #d7e0e7;background:#fff;color:#263445;font:inherit}
+.shop-pagination{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px}
+.shop-page-button{min-width:36px;min-height:36px;border:1px solid #d7e0e7;background:#fff;padding:6px 10px;color:#263445;font:inherit;font-size:10px;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+.shop-page-button:hover:not(:disabled):not(.is-current){border-color:#38BDF8;color:#101B2B}
+.shop-page-button.is-current{border-color:#101B2B;background:#101B2B;color:#fff;cursor:default}
+.shop-page-button:focus-visible,.shop-page-size-control select:focus-visible{outline:2px solid #1686b8;outline-offset:2px}
+.shop-page-button:disabled{border-color:#e2e8f0;background:#f0f4f6;color:#a1acb6;cursor:not-allowed}
+.shop-page-direction{min-width:76px}
 .clear-filters{border:0;border-bottom:1px solid #aeb9c3;background:none;padding:0 0 3px;color:#263445;font-size:10px;cursor:pointer}
 .clear-filters:hover{color:#1686b8;border-color:#38BDF8}
 .clear-filters:focus-visible,.filter-button:focus-visible{outline:2px solid #1686b8;outline-offset:3px}
@@ -57,6 +67,12 @@
   .shop-stock-filter{min-height:44px}
   .filter-button{min-height:44px;padding:8px 12px;font-size:9px}
   .shop-result-info{width:100%;justify-content:flex-start;flex-wrap:wrap;white-space:normal;gap:8px 14px}
+  .shop-pagination-bar{align-items:stretch;flex-direction:column;gap:13px;margin-top:20px}
+  .shop-page-size-control{justify-content:space-between;min-height:44px}
+  .shop-page-size-control select{min-width:84px;min-height:44px}
+  .shop-pagination{justify-content:center;gap:6px}
+  .shop-page-button{min-width:44px;min-height:44px;padding:8px}
+  .shop-page-direction{min-width:78px}
   .clear-filters{display:inline-flex;align-items:center;min-height:44px;padding:6px}
   .shop-empty-state{padding:48px 18px}
 }

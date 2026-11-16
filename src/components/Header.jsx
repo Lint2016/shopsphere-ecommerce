@@ -54,6 +54,7 @@ export default function Header() {
     setSearchQuery('')
     const nextParams = new URLSearchParams(location.search)
     nextParams.delete('q')
+    if (location.pathname === '/shop') nextParams.delete('page')
     const nextSearch = nextParams.toString()
     navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ''}`, { replace: true })
   }
@@ -70,6 +71,7 @@ export default function Header() {
       ? new URLSearchParams(location.search)
       : new URLSearchParams()
     nextParams.set('q', query)
+    nextParams.delete('page')
     navigate(`/shop?${nextParams.toString()}`)
   }
 

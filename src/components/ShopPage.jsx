@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ProductCard from './ProductCard'
 import { categories, products } from '../data/catalog'
@@ -12,6 +12,7 @@ const sortOptions = [
   { value: 'name-desc', label: 'Name: Z to A' },
 ]
 const urlSortValues = sortOptions.filter(({ value }) => value !== 'featured').map(({ value }) => value)
+const pageSizes = [6, 9, 12]
 const productOrder = new Map(products.map((product, index) => [product.id, index]))
 
 function parsePriceBound(value) {
@@ -21,8 +22,25 @@ function parsePriceBound(value) {
   return Number.isFinite(price) && price >= 0 ? price : null
 }
 
+function parsePage(value) {
+  if (value === null || !/^\d+$/.test(value)) return null
+
+  const page = Number(value)
+  return Number.isSafeInteger(page) && page > 0 ? page : null
+}
+
+function parsePageSize(value) {
+  const limit = Number(value)
+  return pageSizes.includes(limit) && String(limit) === value ? limit : null
+}
+
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const requestedPage = searchParams.get('page')
+  const parsedPage = parsePage(requestedPage)
+  const requestedLimit = searchParams.get('limit')
+  const parsedLimit = parsePageSize(requestedLimit)
+  const pageSize = parsedLimit ?? 6
   const urlMinPrice = searchParams.get('minPrice') ?? ''
   const urlMaxPrice = searchParams.get('maxPrice') ?? ''
   const [priceDrafts, setPriceDrafts] = useState({ urlMinPrice, urlMaxPrice, min: urlMinPrice, max: urlMaxPrice, error: '' })
@@ -77,6 +95,54 @@ export default function ShopPage() {
     return comparison || productOrder.get(first.id) - productOrder.get(second.id)
   })
 
+  const totalPages = Math.ceil(sortedProducts.length / pageSize)
+  const effectivePage = totalPages === 0 ? 1 : Math.min(parsedPage ?? 1, totalPages)
+  const firstProductIndex = (effectivePage - 1) * pageSize
+  const currentPageProducts = sortedProducts.slice(firstProductIndex, firstProductIndex + pageSize)
+  const displayedRangeStart = sortedProducts.length === 0 ? 0 : firstProductIndex + 1
+  const displayedRangeEnd = Math.min(firstProductIndex + pageSize, sortedProducts.length)
+
+  useEffect(() => {
+    const normalizedPage = effectivePage === 1 ? null : String(effectivePage)
+    const normalizedLimit = pageSize === 6 ? null : String(pageSize)
+    const needsPageCorrection = requestedPage !== normalizedPage
+    const needsLimitCorrection = requestedLimit !== normalizedLimit
+
+    if (!needsPageCorrection && !needsLimitCorrection) return
+
+    const nextParams = new URLSearchParams(searchParams)
+    if (normalizedPage === null) nextParams.delete('page')
+    else nextParams.set('page', normalizedPage)
+    if (normalizedLimit === null) nextParams.delete('limit')
+    else nextParams.set('limit', normalizedLimit)
+
+    if (nextParams.toString() !== searchParams.toString()) {
+      setSearchParams(nextParams, { replace: true })
+    }
+  }, [effectivePage, pageSize, parsedLimit, parsedPage, requestedLimit, requestedPage, searchParams, setSearchParams])
+
+  function updateFilterParams(nextParams) {
+    nextParams.delete('page')
+    setSearchParams(nextParams)
+  }
+
+  function selectPageSize(limit) {
+    const nextParams = new URLSearchParams(searchParams)
+    if (limit === 6) nextParams.delete('limit')
+    else nextParams.set('limit', String(limit))
+    nextParams.delete('page')
+    setSearchParams(nextParams)
+  }
+
+  function selectPage(page) {
+    if (page < 1 || page > totalPages || page === effectivePage) return
+
+    const nextParams = new URLSearchParams(searchParams)
+    if (page === 1) nextParams.delete('page')
+    else nextParams.set('page', String(page))
+    setSearchParams(nextParams)
+  }
+
   function selectCategory(category) {
     const nextParams = new URLSearchParams(searchParams)
     if (category === 'All') {
@@ -85,44 +151,44 @@ export default function ShopPage() {
       nextParams.set('category', category)
     }
 
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function clearSearch() {
     const nextParams = new URLSearchParams(searchParams)
     nextParams.delete('q')
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function clearCategory() {
     const nextParams = new URLSearchParams(searchParams)
     nextParams.delete('category')
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function clearMinPrice() {
     const nextParams = new URLSearchParams(searchParams)
     nextParams.delete('minPrice')
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function clearMaxPrice() {
     const nextParams = new URLSearchParams(searchParams)
     nextParams.delete('maxPrice')
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function clearPriceFilters() {
     const nextParams = new URLSearchParams(searchParams)
     nextParams.delete('minPrice')
     nextParams.delete('maxPrice')
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function clearStock() {
     const nextParams = new URLSearchParams(searchParams)
     nextParams.delete('inStock')
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function clearAll() {
@@ -132,7 +198,7 @@ export default function ShopPage() {
     nextParams.delete('minPrice')
     nextParams.delete('maxPrice')
     nextParams.delete('inStock')
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function selectSort(sort) {
@@ -143,7 +209,7 @@ export default function ShopPage() {
       nextParams.set('sort', sort)
     }
 
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function applyPriceFilters(event) {
@@ -170,14 +236,14 @@ export default function ShopPage() {
     if (nextMaxPrice === null) nextParams.delete('maxPrice')
     else nextParams.set('maxPrice', String(nextMaxPrice))
     setPriceDrafts({ urlMinPrice, urlMaxPrice, min: minPriceDraft, max: maxPriceDraft, error: '' })
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   function toggleInStock(checked) {
     const nextParams = new URLSearchParams(searchParams)
     if (checked) nextParams.set('inStock', 'true')
     else nextParams.delete('inStock')
-    setSearchParams(nextParams)
+    updateFilterParams(nextParams)
   }
 
   const emptyFilterDescriptions = [
@@ -234,7 +300,7 @@ export default function ShopPage() {
       </form>
       <label className="shop-stock-filter"><input type="checkbox" checked={requestedInStock} onChange={(event) => toggleInStock(event.target.checked)} /> In-stock only</label>
       <div className="shop-result-info" aria-live="polite" aria-atomic="true">
-        <span>{matchingProducts.length} {matchingProducts.length === 1 ? 'product' : 'products'}</span>
+        <span>{displayedRangeStart}–{displayedRangeEnd} of {matchingProducts.length} {matchingProducts.length === 1 ? 'product' : 'products'}</span>
         {matchingProducts.length === 0 && <span className="sr-only">{emptyStateMessage}</span>}
         {individualClearActions.map(({ label, onClick }) => <button className="clear-filters" type="button" key={label} onClick={onClick}>{label}</button>)}
         {hasAnyFilters && <button className="clear-filters" type="button" onClick={clearAll}>Clear all filters</button>}
@@ -242,10 +308,31 @@ export default function ShopPage() {
     </div>
 
     {matchingProducts.length > 0
-      ? <div className="product-grid">{sortedProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div>
+      ? <div className="product-grid">{currentPageProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div>
       : <div className="shop-empty-state"><h2>{emptyStateMessage}</h2><p>Try adjusting your search or filters to browse the full collection.</p><div className="shop-empty-actions">
         {individualClearActions.map(({ label, onClick }) => <button className="clear-filters" type="button" key={label} onClick={onClick}>{label}</button>)}
         {hasAnyFilters && <button className="clear-filters" type="button" onClick={clearAll}>Clear all filters</button>}
       </div></div>}
+
+    {matchingProducts.length > 0 && <div className="shop-pagination-bar">
+      <div className="shop-page-size-control">
+        <label htmlFor="shop-page-size">Products per page</label>
+        <select id="shop-page-size" value={pageSize} onChange={(event) => selectPageSize(Number(event.target.value))}>
+          {pageSizes.map((size) => <option key={size} value={size}>{size}</option>)}
+        </select>
+      </div>
+      {totalPages > 1 && <nav className="shop-pagination" aria-label="Product pages">
+        <button className="shop-page-button shop-page-direction" type="button" onClick={() => selectPage(effectivePage - 1)} disabled={effectivePage === 1} aria-label="Previous page">Previous</button>
+        {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => <button
+          className={`shop-page-button${page === effectivePage ? ' is-current' : ''}`}
+          type="button"
+          key={page}
+          onClick={() => selectPage(page)}
+          aria-label={`Page ${page}`}
+          aria-current={page === effectivePage ? 'page' : undefined}
+        >{page}</button>)}
+        <button className="shop-page-button shop-page-direction" type="button" onClick={() => selectPage(effectivePage + 1)} disabled={effectivePage === totalPages} aria-label="Next page">Next</button>
+      </nav>}
+    </div>}
   </section>
 }
